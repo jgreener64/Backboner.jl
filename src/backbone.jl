@@ -1,84 +1,47 @@
-export Backbone
+export AbstractBackbone, Backbone, BackboneView
 
-# TODO: allow using elastic/resizable arrays for coords
+using ElasticArrays
 
-"""
-    Backbone{T <: Real} <: AbstractVector{AbstractVector{T}}
+const ElasticAtomArray{T, N} = AtomArray{T, N, M, A} where {M, A <: ElasticArray{T, M}}
+const ElasticAtomVector{T} = ElasticAtomArray{T, 1}
+const ElasticAtomMatrix{T} = ElasticAtomArray{T, 2}
 
-The `Backbone` type is designed to efficiently store and manipulate the three-dimensional coordinates of backbone atoms.
+abstract type AbstractBackbone{T <: Real} <: AbstractAtomVector{T} end
 
-# Examples
 
-A `Backbone` can be created from a matrix of coordinates:
+struct Backbone{T} <: AbstractBackbone{T}
+    atoms::ElasticAtomVector{T}
+    bonds::ChainedBonds{T}
 
-```jldoctest
-julia> backbone = Backbone(zeros(3, 5)) # 5 atoms with 3 coordinates each
-5-element Backbone{Float64}:
- [0.0, 0.0, 0.0]
- [0.0, 0.0, 0.0]
- [0.0, 0.0, 0.0]
- [0.0, 0.0, 0.0]
- [0.0, 0.0, 0.0]
-
-julia> backbone[1] = [1.0, 2.0, 3.0]; # set the first atom's coordinates
-
-julia> backbone
-5-element Backbone{Float64}:
- [1.0, 2.0, 3.0]
- [0.0, 0.0, 0.0]
- [0.0, 0.0, 0.0]
- [0.0, 0.0, 0.0]
- [0.0, 0.0, 0.0]
-
-julia> backbone[1:2] # indexing by range returns a `Backbone` wrapped around a view of the original
-2-element Backbone{Float64}:
- [1.0, 2.0, 3.0]
- [0.0, 0.0, 0.0]
-```
-
-Arrays will always be flattened to be a 3xN matrix:
-
-```jldoctest
-julia> backbone = Backbone(zeros(3, 3, 100)) # 3 coordinates per atom, 3 atoms per residue, 100 residues
-300-element Backbone{Float64}:
- [0.0, 0.0, 0.0]
- [0.0, 0.0, 0.0]
- [0.0, 0.0, 0.0]
- [0.0, 0.0, 0.0]
- ⋮
- [0.0, 0.0, 0.0]
- [0.0, 0.0, 0.0]
- [0.0, 0.0, 0.0]
- [0.0, 0.0, 0.0]
-```
-"""
-struct Backbone{T <: Real} <: AbstractVector{AbstractVector{T}}
-    coords::AbstractMatrix{T}
-
-    function Backbone(coords::AbstractMatrix{T}) where T
-        @assert size(coords, 1) == 3 "coords must have 3 coordinates per atom"
-        return new{T}(coords)
+    function Backbone{T}(atomarray::AtomArray{T}) where T
+        atoms = AtomVector{T}(ElasticArray(reshape(atomarray.coords, 3, :)))
+        bonds = ChainedBonds(atoms)
+        return new{T}(atoms, bonds)
     end
 end
 
-function Backbone{T}(::UndefInitializer, n_atoms::Integer) where T
-    return Backbone(Matrix{T}(undef, 3, n_atoms))
+Backbone{T}(coords::AbstractArray{T}) where T = Backbone{T}(AtomArray{T}(coords))
+Backbone(coords::AbstractArray{T}) where T = Backbone{T}(coords)
+
+@inline Base.size(backbone::Backbone) = size(backbone.atoms)
+@inline Base.length(backbone::Backbone) = length(backbone.atoms)
+
+@inline Base.getindex(backbone::Backbone, i::Integer) = backbone.atoms[i]
+@inline Base.getindex(backbone::Backbone, r::AbstractVector{<:Integer}) = Backbone(backbone.atoms[I])
+
+
+struct BackboneView{T} <: AbstractBackbone{T}
+    original::Backbone{T}
+    indices::AbstractVector{<:Integer}
+
+    function BackboneView{T}(original::Backbone{T}, indices::AbstractVector{<:Integer}) where T
+        checkbounds(original, indices)
+        return new{T}(original, indices)
+    end
 end
 
-function Backbone(coords::AbstractArray{T, 3}) where T
-    @assert size(coords, 1) == 3 "coords must have 3 coordinates per atom"
-    return Backbone(reshape(coords, 3, :))
-end
+@inline Base.size(backbone::BackboneView) = length(backbone.indices)
+@inline Base.length(backbone::BackboneView) = size(backbone.indices)
 
-@inline Base.:(==)(backbone1::Backbone, backbone2::Backbone) = backbone1.coords == backbone2.coords
-@inline Base.:(≈)(backbone1::Backbone, backbone2::Backbone) = backbone1.coords ≈ backbone2.coords
-
-@inline Base.length(backbone::Backbone) = size(backbone.coords, 2)
-@inline Base.size(backbone::Backbone) = Tuple(length(backbone))
-
-@inline Base.getindex(backbone::Backbone, i::Integer) = backbone.coords[:, i]
-@inline Base.getindex(backbone::Backbone, r::AbstractVector{<:Integer}) = Backbone(backbone.coords[:, r])
-@inline Base.view(backbone::Backbone, I...) = Backbone(view(backbone.coords, :, I...))
-
-@inline Base.setindex!(backbone::Backbone, coords::AbstractVector, i::Integer) = (backbone.coords[:, i] .= coords)
-@inline Base.setindex!(backbone::Backbone, coords::AbstractMatrix, r::AbstractVector{<:Integer}) = (backbone.coords[:, r] .= coords)
+@inline Base.getindex(backbone::BackboneView, i::Integer) = backbone.original[backbone.indices[i]]
+@inline Base.getindex(backbone::BackboneView, I...) = BackboneView(backbone.original, backbone.indices[I...])

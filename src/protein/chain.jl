@@ -21,7 +21,7 @@ struct Chain <: AbstractVector{Residue}
     backbone::Backbone
     aavector::Vector{Char}
     ssvector::Vector{Char}
-    bonds::ChainedBonds
+    #residues::AtomStack
 
     function Chain(
         id::AbstractString,
@@ -36,9 +36,9 @@ struct Chain <: AbstractVector{Residue}
 
         return new(id, backbone, aavector, ssvector, bonds)
     end
-
-    Chain(backbone::Backbone; kwargs...) = Chain("_", backbone; kwargs...) 
 end
+
+Chain(backbone::Backbone; kwargs...) = Chain("_", backbone; kwargs...) 
 
 @inline Base.:(==)(chain1::Chain, chain2::Chain) = chain1.id == chain2.id && chain1.backbone == chain2.backbone && chain1.ssvector == chain2.ssvector
 @inline Base.length(chain::Chain) = length(chain.backbone) ÷ 3

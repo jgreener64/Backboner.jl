@@ -37,28 +37,28 @@ function _pairwise_column_distances(
 end
 
 function get_atom_displacements(
-    backbone::Backbone, start::Integer, step::Integer, stride::Integer,
+    atomvector::AtomVector, start::Integer, step::Integer, stride::Integer,
 )
     displacements = _pairwise_column_displacements(
-        @view(backbone.coords[:, start:stride:end-step]),
-        @view(backbone.coords[:, start+step:stride:end]))
+        @view(atomvector.coords[:, start:stride:end-step]),
+        @view(atomvector.coords[:, start+step:stride:end]))
     return displacements
 end
 
 function get_atom_distances(
-    backbone::Backbone, start::Integer, step::Integer, stride::Integer,
+    atomvector::AtomVector, start::Integer, step::Integer, stride::Integer,
 )
     distances = _pairwise_column_distances(
-        @view(backbone.coords[:, start:stride:end-step]),
-        @view(backbone.coords[:, start+step:stride:end]))
+        @view(atomvector.coords[:, start:stride:end-step]),
+        @view(atomvector.coords[:, start+step:stride:end]))
     return distances
 end
 
 
-get_bond_vectors(backbone::Backbone) = get_atom_displacements(backbone, 1, 1, 1)
+get_bond_vectors(atomvector::AtomVector) = get_atom_displacements(atomvector, 1, 1, 1)
 
 get_bond_lengths(bond_vectors::AbstractMatrix{<:Real}) = _column_norms(bond_vectors)
-get_bond_lengths(backbone::Backbone) = get_bond_lengths(get_bond_vectors(backbone))
+get_bond_lengths(atomvector::AtomVector) = get_bond_lengths(get_bond_vectors(atomvector))
 
 function get_bond_angle(v1::V, v2::V) where V <: AbstractVector{<:Real}
     return acos((-dot(v1, v2)) / (norm(v1) * norm(v2)))
@@ -70,7 +70,7 @@ function get_bond_angles(bond_vectors::AbstractMatrix{<:Real})
     return bond_angles
 end
 
-get_bond_angles(backbone::Backbone) = get_bond_angles(get_bond_vectors(backbone))
+get_bond_angles(atomvector::AtomVector) = get_bond_angles(get_bond_vectors(atomvector))
 
 # source: https://en.wikipedia.org/w/index.php?title=Dihedral_angle&oldid=1182848974#In_polymer_physics
 function dihedral_angle(u1::V, u2::V, u3::V) where V <: AbstractVector{<:Real}
@@ -89,7 +89,7 @@ function get_dihedrals(vectors::AbstractMatrix{T}) where T
     return dihedrals
 end
 
-get_dihedrals(backbone::Backbone) = get_dihedrals(get_bond_vectors(backbone))
+get_dihedrals(atomvector::AtomVector) = get_dihedrals(get_bond_vectors(atomvector))
 
 
 """
@@ -140,12 +140,13 @@ function ChainedBonds(vectors::AbstractMatrix{<:Real})
     return ChainedBonds(lengths, angles, dihedrals)
 end
 
-function ChainedBonds(backbone::Backbone)
-    return ChainedBonds(get_bond_vectors(backbone))
+function ChainedBonds(atomvector::AtomVector, order::AbstractVector{<:Integer} = 1:length(atomvector))
+    return ChainedBonds(get_bond_vectors(atomvector[order]))
 end
 
 Base.:(==)(b1::ChainedBonds, b2::ChainedBonds) = b1.lengths == b2.lengths && b1.angles == b2.angles && b1.dihedrals == b2.dihedrals
 Base.:(≈)(b1::ChainedBonds, b2::ChainedBonds) = b1.lengths ≈ b2.lengths && b1.angles ≈ b2.angles && b1.dihedrals ≈ b2.dihedrals
+
 Base.length(bonds::ChainedBonds) = length(bonds.lengths)
 Base.size(bonds::ChainedBonds) = Tuple(length(bonds))
 
@@ -174,7 +175,7 @@ end
 
 # first_points don't get adjusted to fit the bonds
 # first_points needs to have at least 3 columns
-function Backbone(
+#=function Backbone(
     bonds::ChainedBonds{T};
     first_points::AbstractMatrix{<:Real} = get_first_points(bonds),
 ) where T
@@ -202,12 +203,12 @@ function Backbone(
         coords[:, i] = D
     end
 
-    backbone = Backbone(coords)
-    return backbone
-end
+    atomvector = AtomVector{T}(coords)
+    return Backbone(atomvector, bonds)
+end=#
 
 
-function append_bonds!(
+#=function append_bonds!(
     bonds::ChainedBonds,
     lengths::AbstractVector{<:Real},
     angles::AbstractVector{<:Real},
@@ -249,4 +250,4 @@ function append_bonds(
     backbone_end = Backbone(bonds_end, first_points = last_three_atoms_backbone)
     new_backbone = Backbone(cat(backbone.coords, backbone_end[4:end].coords, dims=2))
     return new_backbone
-end
+end=#
