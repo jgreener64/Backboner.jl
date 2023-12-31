@@ -1,7 +1,5 @@
 export Backbone
 
-# TODO: allow using elastic/resizable arrays for coords
-
 """
     Backbone{T <: Real} <: AbstractVector{AbstractVector{T}}
 
@@ -53,7 +51,7 @@ julia> backbone = Backbone(zeros(3, 3, 100)) # 3 coordinates per atom, 3 atoms p
 ```
 """
 struct Backbone{T <: Real} <: AbstractVector{AbstractVector{T}}
-    coords::AbstractMatrix{T}
+    coords::ElasticMatrix{T}
 
     function Backbone(coords::AbstractMatrix{T}) where T
         @assert size(coords, 1) == 3 "coords must have 3 coordinates per atom"

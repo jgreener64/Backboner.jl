@@ -1,7 +1,8 @@
 module Backboner
 
-include("backbone.jl")
+include("atoms.jl")
 include("bonds.jl")
+include("backbone.jl")
 include("protein/protein.jl")
 
 end

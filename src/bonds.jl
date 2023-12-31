@@ -37,32 +37,30 @@ function _pairwise_column_distances(
 end
 
 function get_atom_displacements(
-    backbone::Backbone, start::Integer, step::Integer, stride::Integer,
+    atom_vector::AtomVector, start::Integer, step::Integer, stride::Integer,
 )
     displacements = _pairwise_column_displacements(
-        @view(backbone.coords[:, start:stride:end-step]),
-        @view(backbone.coords[:, start+step:stride:end]))
+        @view(atom_vector.coords[:, start:stride:end-step]),
+        @view(atom_vector.coords[:, start+step:stride:end]))
     return displacements
 end
 
 function get_atom_distances(
-    backbone::Backbone, start::Integer, step::Integer, stride::Integer,
+    atom_vector::AtomVector, start::Integer, step::Integer, stride::Integer,
 )
     distances = _pairwise_column_distances(
-        @view(backbone.coords[:, start:stride:end-step]),
-        @view(backbone.coords[:, start+step:stride:end]))
+        @view(atom_vector.coords[:, start:stride:end-step]),
+        @view(atom_vector.coords[:, start+step:stride:end]))
     return distances
 end
 
 
-get_bond_vectors(backbone::Backbone) = get_atom_displacements(backbone, 1, 1, 1)
+get_bond_vectors(atom_vector::AtomVector) = get_atom_displacements(atom_vector, 1, 1, 1)
 
 get_bond_lengths(bond_vectors::AbstractMatrix{<:Real}) = _column_norms(bond_vectors)
-get_bond_lengths(backbone::Backbone) = get_bond_lengths(get_bond_vectors(backbone))
+get_bond_lengths(atom_vector::AtomVector) = get_bond_lengths(get_bond_vectors(backbone))
 
-function get_bond_angle(v1::V, v2::V) where V <: AbstractVector{<:Real}
-    return acos((-dot(v1, v2)) / (norm(v1) * norm(v2)))
-end
+get_bond_angle(v1, v2) = acos((-dot(v1, v2)) / (norm(v1) * norm(v2)))
 
 function get_bond_angles(bond_vectors::AbstractMatrix{<:Real})
     bond_vector_pairs = zip(eachcol(bond_vectors), Iterators.drop(eachcol(bond_vectors), 1))
