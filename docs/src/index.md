@@ -24,28 +24,3 @@ Backboner is a registered Julia package, and can be installed with the Julia pac
 using Pkg
 Pkg.add("Backboner")
 ```
-
-## Usage
-
-The `Protein` type wraps a vector of `Chain`s.
-
-```jldoctest
-julia> using Backboner, Backboner.Protein
-
-julia> protein = readpdb("test/data/1ZAK.pdb")
-2-element Vector{Chain}:
- Chain A with 220 residues
- Chain B with 220 residues
-
-julia> chain = protein["A"] # chains can be accessed by name
-Chain A with 220 residues
-
-julia> protein["A"] == protein[1] # numeric indexing also works
-true
-
-julia> new_protein = [protein["A"]] # create a new protein with a single chain
-1-element Vector{Chain}:
- Chain A with 220 residues
-
-julia> writepdb(new_protein, "test/data/1ZAK_A.pdb");
-```
