@@ -14,38 +14,18 @@ end
 [![Build Status](https://github.com/MurrellGroup/Backboner.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/MurrellGroup/Backboner.jl/actions/workflows/CI.yml?query=branch%3Amain)
 [![Coverage](https://codecov.io/gh/MurrellGroup/Backboner.jl/branch/main/graph/badge.svg)](https://codecov.io/gh/MurrellGroup/Backboner.jl)
 
-Backboner is a Julia package that offers a suite of tools for storing protein backbone atom positions, estimating oxygen atom positions, assigning secondary structure, and more. [View the source code on GitHub](https://github.com/MurrellGroup/Backboner.jl) (licensed under MIT).
+Backboner is a Julia package that offers a set of types and functions for working with molecular *backbones*: defined here as a continuous chain of bonded atoms. The package provides a variety of different types for representing backbones:
+- `Backbone`, containing a 3xN matrix of coordinates
+- `ChainedBonds`, holding bond lengths, bond angles, and dihedral angles
+- `Frames`, a collection of rotations and translations (e.g. for representing orientations and locations of protein residues)
+
+[View the source code on GitHub](https://github.com/MurrellGroup/Backboner.jl) (licensed under MIT).
 
 ## Installation
 
-Backboner is a registered Julia package, and can be installed with the Julia package manager:
+Backboner is a registered in the General Julia package registry, and can be installed with the Julia package manager:
 
 ```julia
 using Pkg
 Pkg.add("Backboner")
-```
-
-## Usage
-
-The `Protein` type wraps a vector of `Chain`s.
-
-```jldoctest
-julia> using Backboner, Backboner.Protein
-
-julia> protein = readpdb("test/data/1ZAK.pdb")
-2-element Vector{Chain}:
- Chain A with 220 residues
- Chain B with 220 residues
-
-julia> chain = protein["A"] # chains can be accessed by name
-Chain A with 220 residues
-
-julia> protein["A"] == protein[1] # numeric indexing also works
-true
-
-julia> new_protein = [protein["A"]] # create a new protein with a single chain
-1-element Vector{Chain}:
- Chain A with 220 residues
-
-julia> writepdb(new_protein, "test/data/1ZAK_A.pdb");
 ```

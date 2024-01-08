@@ -1,4 +1,4 @@
-# Backboner API
+# API Reference
 
 ```@autodocs
 Modules = [Backboner]
